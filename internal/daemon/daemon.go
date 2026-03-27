@@ -2286,7 +2286,8 @@ func (d *Daemon) reapIdlePolecat(rigName, polecatName string, timeout time.Durat
 			// Agent bead lookup failed — polecat has no provable work.
 			// If heartbeat is stale enough (2x timeout), reap anyway to prevent
 			// indefinite API burn when bead infrastructure is degraded.
-			if staleDuration >= timeout*2 {
+			// But first check if the agent is actually running (GH#3342).
+			if staleDuration >= timeout*2 && !d.tmux.IsAgentRunning(sessionName) {
 				d.killIdlePolecat(rigName, polecatName, sessionName, staleDuration, timeout, "working-bead-lookup-failed")
 			}
 			return
@@ -2300,7 +2301,12 @@ func (d *Daemon) reapIdlePolecat(rigName, polecatName string, timeout time.Durat
 			return
 		}
 
-		// No hooked work + stale heartbeat = idle polecat
+		// No hooked work + stale heartbeat — but check if the agent process
+		// is still actively running before reaping. A failed gt sling rollback
+		// can clear the hook while the agent is still working (GH#3342).
+		if d.tmux.IsAgentRunning(sessionName) {
+			return
+		}
 		d.killIdlePolecat(rigName, polecatName, sessionName, staleDuration, timeout, "working-no-hook")
 	}
 }
