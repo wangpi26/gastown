@@ -133,6 +133,7 @@ type Template struct {
 	Title       string   `toml:"title"`
 	Description string   `toml:"description"`
 	Needs       []string `toml:"needs"`
+	Acceptance  string   `toml:"acceptance"` // Exit criteria for this expanded step (propagated to generated Step)
 }
 
 // Var represents a variable definition for formulas.
