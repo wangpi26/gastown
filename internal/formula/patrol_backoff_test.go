@@ -277,16 +277,25 @@ func TestDeaconPatrolHasHeartbeatSteps(t *testing.T) {
 
 	// There should be a mid-cycle heartbeat step
 	foundMid := false
+	foundPreAwait := false
 	for _, step := range f.Steps {
 		if step.ID == "heartbeat-mid" {
 			foundMid = true
 			if !strings.Contains(step.Description, "gt deacon heartbeat") {
 				t.Error("heartbeat-mid step must contain \"gt deacon heartbeat\" command")
 			}
-			break
+		}
+		if step.ID == "loop-or-exit" && strings.Contains(step.Description, "pre-await checkpoint") {
+			foundPreAwait = true
+			if !strings.Contains(step.Description, "gt deacon heartbeat") {
+				t.Error("loop-or-exit step must refresh heartbeat before await-signal")
+			}
 		}
 	}
 	if !foundMid {
 		t.Error("deacon patrol formula must have a \"heartbeat-mid\" step for mid-cycle refresh")
+	}
+	if !foundPreAwait {
+		t.Error("deacon patrol formula must refresh heartbeat again before await-signal")
 	}
 }
