@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/steveyegge/gastown/internal/beads"
 	"github.com/steveyegge/gastown/internal/events"
@@ -61,13 +62,17 @@ func postDirectMergeNotify(townRoot, rigName, issueID string, convoyInfo *Convoy
 		fmt.Printf("%s Deacon notified: CONVOY_NEEDS_FEEDING\n", style.Bold.Render("✓"))
 	}
 
-	// 2b. Emit event to wake deacon from await-signal (mirrors refinery line 1926)
-	_ = events.LogFeed(events.TypeMail, rigName+"/polecat", events.MailPayload("deacon/", "CONVOY_NEEDS_FEEDING "+convoyInfo.ID))
+	// 2b. Emit event to wake deacon from await-signal (mirrors refinery line 1926).
+	// Actor uses "refinery" for consistency with refinery's event emission so that
+	// any consumer dispatching on actor prefix treats this identically.
+	if err := events.LogFeed(events.TypeMail, rigName+"/refinery", events.MailPayload("deacon/", "CONVOY_NEEDS_FEEDING "+convoyInfo.ID)); err != nil {
+		style.PrintWarning("could not emit convoy feeding event: %v", err)
+	}
 
 	// 2c. Check and close completed convoys + send completion notifications.
 	// Reuses the existing checkAndCloseCompletedConvoys and notifyConvoyCompletion
 	// functions from convoy.go (same logic the refinery uses via its own copy).
-	townBeads := townRoot + "/.beads"
+	townBeads := filepath.Join(townRoot, ".beads")
 	if _, err := os.Stat(townBeads); err != nil {
 		return // No town beads directory — nothing to check
 	}

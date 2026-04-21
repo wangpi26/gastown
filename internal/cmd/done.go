@@ -650,10 +650,7 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 			// are never notified. This call mirrors the refinery's post-merge
 			// steps: MERGED nudge to mayor, CONVOY_NEEDS_FEEDING to deacon,
 			// convoy completion check/close/notify, and swarm landing.
-			// Only runs on successful push + issue close (not on pushFailed path).
-			if !pushFailed && directPushErr == nil {
-				postDirectMergeNotify(townRoot, rigName, issueID, convoyInfo)
-			}
+			postDirectMergeNotify(townRoot, rigName, issueID, convoyInfo)
 
 			goto notifyWitness
 		}
