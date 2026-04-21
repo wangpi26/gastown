@@ -45,6 +45,8 @@ const (
 	// to redirect traffic to api.groq.com. GROQ_API_KEY must be set in the shell
 	// environment — it is read dynamically and never stored in config files.
 	AgentGroqCompound AgentPreset = "groq-compound"
+	// AgentKscc is Kscc, a Claude Code fork.
+	AgentKscc AgentPreset = "kscc"
 )
 
 // AgentPresetInfo contains the configuration details for an agent preset.
@@ -246,6 +248,31 @@ var builtinPresets = map[AgentPreset]*AgentPresetInfo{
 		InstructionsFile:       "CLAUDE.md",
 		EmitsPermissionWarning: true,
 		HasTurnBoundaryDrain:   true,
+	},
+	AgentKscc: {
+		Name:                    AgentKscc,
+		Command:                 "kscc",
+		Args:                    []string{"--dangerously-skip-permissions"},
+		ProcessNames:            []string{"node", "claude"},
+		SessionIDEnv:            "CLAUDE_SESSION_ID",
+		ResumeFlag:              "--resume",
+		ContinueFlag:            "--continue",
+		ResumeStyle:             "flag",
+		SupportsHooks:           true,
+		SupportsForkSession:     true,
+		NonInteractive:          nil,
+		PromptMode:              "arg",
+		ConfigDirEnv:            "CLAUDE_CONFIG_DIR",
+		ConfigDir:               ".claude",
+		HooksProvider:           "claude",
+		HooksDir:                ".claude",
+		HooksSettingsFile:       "settings.json",
+		HooksUseSettingsDir:     true,
+		ReadyPromptPrefix:       "❯ ",
+		ReadyDelayMs:            10000,
+		InstructionsFile:        "CLAUDE.md",
+		EmitsPermissionWarning:  true,
+		HasTurnBoundaryDrain:     true,
 	},
 	AgentGemini: {
 		Name:                AgentGemini,

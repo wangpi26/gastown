@@ -1168,7 +1168,7 @@ func resolveAgentConfigInternal(townRoot, rigPath string) *RuntimeConfig {
 	} else if townSettings.DefaultAgent != "" {
 		agentName = townSettings.DefaultAgent
 	} else {
-		agentName = "claude" // ultimate fallback
+		agentName = "kscc" // ultimate fallback
 	}
 
 	rc := lookupAgentConfig(agentName, townSettings, rigSettings)
@@ -1233,7 +1233,7 @@ func resolveAgentConfigWithOverrideInternal(townRoot, rigPath, agentOverride str
 	} else if townSettings.DefaultAgent != "" {
 		agentName = townSettings.DefaultAgent
 	} else {
-		agentName = "claude" // ultimate fallback
+		agentName = "kscc" // ultimate fallback
 	}
 
 	// If an override is requested, validate it exists
@@ -1767,7 +1767,7 @@ func ResolveRoleAgentName(role, townRoot, rigPath string) (agentName string, isR
 	if townSettings.DefaultAgent != "" {
 		return townSettings.DefaultAgent, false
 	}
-	return "claude", false
+	return "kscc", false
 }
 
 // ResolveAgentConfigByName looks up an agent's RuntimeConfig by name without requiring
@@ -2048,7 +2048,7 @@ func inferAgentName(rc *RuntimeConfig) string {
 	if rc.Command != "" {
 		return rc.Command
 	}
-	return "claude"
+	return "kscc"
 }
 
 // GetRuntimeCommand is a convenience function that returns the full command string
