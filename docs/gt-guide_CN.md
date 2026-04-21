@@ -37,11 +37,27 @@
 | **Formula** | 可复用的工作流模板（TOML 格式） |
 | **Molecule** | Formula 实例化后的可执行工作链 |
 
-### 1.2 启动与停止
+### 1.2 初始化与安装
+
+```bash
+# 创建新的 Gas Town 工作空间（首次安装）
+gt install ~/my-workspace
+
+# 将当前目录初始化为一个 Rig
+gt init
+
+# 初始化 Git 仓库（用于 Gas Town HQ）
+gt git-init
+```
+
+### 1.3 启动与停止
 
 ```bash
 # 启动 Gas Town（启动 Deacon + Mayor）
 gt start
+
+# 启动所有 Gas Town 服务（Deacon + Mayor + 所有 Rig 的 Witness 和 Refinery）
+gt up
 
 # 启动所有 Rig 的 Witness 和 Refinery
 gt start --all
@@ -52,11 +68,27 @@ gt start gastown/crew/dave
 # 优雅关闭
 gt shutdown
 
+# 停止所有 Gas Town 服务
+gt down
+
 # 紧急停车（冻结所有 agent，上下文保留）
 gt estop
 gt estop --rig gastown            # 只冻结某个 Rig
 gt thaw                           # 恢复运行
 gt thaw --rig gastown             # 恢复某个 Rig
+```
+
+### 1.4 查看系统信息
+
+```bash
+# 查看 Gas Town 版本和更新内容
+gt info
+
+# 查看版本号
+gt version
+
+# 检查二进制是否过时
+gt stale
 ```
 
 ### 1.3 查看全局状态
@@ -138,6 +170,12 @@ bd create --rig beads "bd CLI bug"
 # 查看 Bead 详情（自动路由到正确的 Rig）
 bd show gt-abc
 
+# 通过 gt 查看 Bead（等价于 bd show）
+gt show gt-abc
+
+# 显示 Bead 内容（适合长文本）
+gt cat gt-abc
+
 # 列出所有 Bead
 bd list
 
@@ -167,11 +205,32 @@ bd update gt-abc --design "Plan: refactor auth module to use dependency injectio
 # 关闭 Bead
 bd close gt-abc
 
+# 通过 gt 关闭 Bead（支持批量关闭）
+gt close gt-abc gt-def
+
 # 关闭但不做代码修改
 bd close gt-abc --reason="no-changes: already fixed upstream"
 ```
 
-### 2.4 Bead 依赖管理
+### 2.4 记忆管理
+
+Polecat 和 Crew 可以跨 session 保留记忆，用于持久化常用上下文。
+
+```bash
+# 存储一条记忆
+gt remember "This project uses bun, not npm"
+
+# 列出所有记忆
+gt memories
+
+# 搜索记忆
+gt memories --search "bun"
+
+# 删除一条记忆
+gt forget <memory-id>
+```
+
+### 2.5 Bead 依赖管理
 
 ```bash
 # 添加依赖（gt-def 需要 gt-abc 先完成）
@@ -336,13 +395,36 @@ gt hook gt-abc gastown/crew/max
 gt hook --clear
 ```
 
-#### 对比：hook vs sling vs handoff
+### 3.4 gt unsling：从 hook 移除工作
+
+```bash
+# 从 agent 的 hook 上移除工作
+gt unsling gastown/chrome
+
+# 移除自己的 hook 工作
+gt unsling
+```
+
+### 3.5 gt release：释放卡住的工作
+
+当一个 Bead 长期处于 `in_progress` 但实际无人处理时，可以释放回待分配状态。
+
+```bash
+# 释放卡住的 in_progress Bead
+gt release gt-abc
+
+# 批量释放某个 Rig 的卡住工作
+gt release --rig gastown --days=3
+```
+
+#### 对比：hook vs sling vs handoff vs unsling
 
 | 命令 | 行为 | 场景 |
 |------|------|------|
 | `gt hook <bead>` | 仅挂载，不启动 | 准备工作但暂不执行 |
 | `gt sling <bead>` | 挂载 + 立即开始 | 分配并执行 |
 | `gt handoff <bead>` | 挂载 + 重启会话 | 上下文满了需要刷新 |
+| `gt unsling` | 从 hook 移除工作 | 取消分配或清理 |
 
 ### 3.4 Convoy：工作批次追踪
 
@@ -369,6 +451,33 @@ gt convoy watch hq-cv-abc
 
 # 关闭 Convoy
 gt convoy close hq-cv-abc
+```
+
+### 3.8 Convoy Synthesis：批次聚合
+
+Synthesis 用于将 Convoy 中完成的 Bead 成果自动聚合。
+
+```bash
+# 查看 Convoy 的 synthesis 状态
+gt synthesis status hq-cv-abc
+
+# 触发 synthesis
+gt synthesis run hq-cv-abc
+```
+
+### 3.9 调度器
+
+Scheduler 用于定时或条件触发工作分发。
+
+```bash
+# 查看调度器状态
+gt scheduler status
+
+# 列出调度规则
+gt scheduler list
+
+# 创建调度规则
+gt scheduler create --cron "0 9 * * 1-5" --formula mol-daily-check
 ```
 
 ### 3.5 Crew Worker 管理
@@ -413,6 +522,18 @@ gt polecat stale
 
 # 清理 Polecat（销毁 session、worktree、branch、agent bead）
 gt polecat nuke chrome
+```
+
+### 3.7 gt commit：带身份的 Git 提交
+
+Polecat 和 Crew 使用 `gt commit` 代替 `git commit`，自动附加 agent 身份信息。
+
+```bash
+# 带 agent 身份的提交（自动添加 Co-Authored-By）
+gt commit -m "fix: resolve auth token refresh (gt-abc)"
+
+# 查看提交差异
+gt commit --dry-run
 ```
 
 ---
@@ -632,7 +753,19 @@ gt escalate close hq-abc123 --reason "Fixed in commit abc"
 gt escalate stale
 ```
 
-### 5.4 Broadcast 与通知
+### 5.4 Resume：接收交接消息
+
+当另一个 agent 向你发送 handoff 时，使用 `gt resume` 读取交接消息。
+
+```bash
+# 检查是否有交接消息
+gt resume
+
+# 读取并继续工作
+gt resume --accept
+```
+
+### 5.5 Broadcast 与通知
 
 ```bash
 # 广播消息给所有 worker
@@ -646,7 +779,7 @@ gt dnd on
 gt dnd off
 ```
 
-### 5.5 Mail vs Nudge vs Escalate 选择指南
+### 5.6 Mail vs Nudge vs Escalate 选择指南
 
 | 场景 | 推荐方式 | 原因 |
 |------|----------|------|
@@ -737,9 +870,35 @@ gt seance
 
 # 查看 session 成本
 gt costs
+
+# 在 session 组之间切换
+gt cycle
 ```
 
-### 6.6 常见问题排查流程
+### 6.6 活动监控
+
+```bash
+# 实时活动流（持续输出 gt 事件）
+gt feed
+
+# 查看城镇活动日志
+gt log
+
+# 发射/查看活动事件
+gt activity
+```
+
+### 6.7 数据修复
+
+```bash
+# 修复数据库身份和配置问题
+gt repair
+
+# 修复特定 Rig
+gt repair --rig gastown
+```
+
+### 6.8 常见问题排查流程
 
 ```
 问题：bd 命令挂起
@@ -890,12 +1049,48 @@ gt agents
 # 查看 Polecat session
 gt session list
 
+# 查看/管理当前角色
+gt role
+gt role list
+
 # Signal handler（Claude Code hook）
 gt signal
 gt tap
+
+# 处理 agent 回调
+gt callbacks
 ```
 
-### 7.7 数据维护
+### 7.7 基础设施 Agent
+
+Gas Town 有多个基础设施级 Agent，通常由 Deacon 自动管理。
+
+```bash
+# Deacon：城镇级守护进程
+gt deacon start
+gt deacon stop
+gt deacon status
+
+# Boot：Deacon 的看门狗
+gt boot status
+gt boot restart
+
+# Mayor：全局协调者
+gt mayor status
+gt mayor nudge         # 催促 Mayor 处理队列
+
+# Dog：跨 Rig 基础设施 worker
+gt dog list
+gt dog status <name>
+gt dog start <name>
+
+# Daemon：Gas Town 后台守护进程
+gt daemon start
+gt daemon stop
+gt daemon status
+```
+
+### 7.8 数据维护
 
 ```bash
 # 完整 Dolt 维护
@@ -917,12 +1112,32 @@ bd flatten
 bd doctor
 ```
 
-### 7.8 配置与设置
+### 7.9 配置与设置
 
 ```bash
 # 查看/修改配置
 gt config list
 gt config set <key> <value>
+
+# 管理角色指令（自定义 agent 行为）
+gt directive list
+gt directive show <name>
+
+# 管理 Claude Code 账户
+gt account list
+gt account switch <name>
+
+# 管理 Hook 脚本
+gt hooks list
+gt hooks add <event> <command>
+
+# 管理当前 issue 显示（状态栏）
+gt issue set gt-abc
+gt issue clear
+
+# 设置 tmux 主题
+gt theme
+gt theme set dark
 
 # 管理 shell 集成
 gt shell install
@@ -944,6 +1159,57 @@ gt disable
 # 插件管理
 gt plugin list
 gt plugin install <name>
+
+# 命令使用统计
+gt metrics
+```
+
+### 7.10 Town 级操作与特殊命令
+
+```bash
+# Town 级操作
+gt town status
+gt town config
+
+# Wasteland 联邦命令（跨工作空间协作）
+gt wl status
+gt wl sync
+
+# Key Record Chronicle（临时数据 TTL 管理）
+gt krc set <key> <value> --ttl 1h
+gt krc get <key>
+
+# Death Warrant（强制终止卡住的 agent）
+gt warrant issue gastown/chrome
+gt warrant list
+gt warrant execute <warrant-id>
+
+# 账户配额轮换
+gt quota status
+gt quota rotate
+
+# Wisp/issue 清理（Dog 可调用的辅助命令）
+gt reaper reap
+gt reaper status
+
+# 巡逻摘要
+gt patrol
+gt patrol status
+
+# 向贡献者致谢
+gt thanks
+```
+
+### 7.11 名称池管理
+
+Polecat 的名称是从名称池中分配的，确保每个 Polecat 有唯一标识。
+
+```bash
+# 查看名称池
+gt namepool list
+
+# 查看可用名称
+gt namepool available
 ```
 
 ---
@@ -957,13 +1223,18 @@ gt plugin install <name>
 | `gt sling <bead> <target>` | 分配工作并立即开始 |
 | `gt assign <crew> <title>` | 快速分配给 Crew worker |
 | `gt hook [bead]` | 查看/挂载 hook |
+| `gt unsling` | 从 hook 移除工作 |
 | `gt done` | 提交工作到合并队列 |
 | `gt handoff` | 交接会话 |
+| `gt commit -m "msg"` | 带 agent 身份的 Git 提交 |
 | `gt ready` | 查看可开始的工作 |
+| `gt release <bead>` | 释放卡住的 in_progress Bead |
 | `gt convoy create/list/status` | 工作批次追踪 |
+| `gt synthesis status/run` | Convoy 批次聚合 |
 | `gt mountain <epic-id>` | Epic 级自主研磨 |
 | `gt mq list/status/retry` | 合并队列操作 |
 | `gt changelog` | 完成记录 |
+| `gt scheduler list/create` | 调度规则管理 |
 
 ### Agent 管理
 
@@ -973,8 +1244,13 @@ gt plugin install <name>
 | `gt crew list/start/stop/status` | Crew worker 管理 |
 | `gt witness start/stop/status` | Witness 管理 |
 | `gt refinery start/stop/status/queue` | Refinery 管理 |
+| `gt deacon start/stop/status` | Deacon 守护进程管理 |
+| `gt mayor status/nudge` | Mayor 全局协调 |
+| `gt dog list/status/start` | Dog 跨 Rig worker |
+| `gt boot status/restart` | Boot 看门狗 |
 | `gt agents` | 列出所有 session |
 | `gt peek <target>` | 查看 agent 输出 |
+| `gt role` | 查看/管理当前角色 |
 
 ### 通信
 
@@ -984,6 +1260,8 @@ gt plugin install <name>
 | `gt nudge <target> <msg>` | 即时消息 |
 | `gt escalate <desc>` | 升级处理 |
 | `gt broadcast <msg>` | 全员广播 |
+| `gt resume` | 接收交接消息 |
+| `gt remember/forget/memories` | 记忆管理 |
 
 ### 诊断
 
@@ -996,6 +1274,9 @@ gt plugin install <name>
 | `gt audit --actor=...` | 工作历史 |
 | `gt orphans` | 孤立项查找 |
 | `gt dolt status` | Dolt 服务状态 |
+| `gt feed` | 实时活动流 |
+| `gt log` | 城镇活动日志 |
+| `gt repair` | 修复数据库问题 |
 
 ### Beads (bd)
 
@@ -1005,6 +1286,8 @@ gt plugin install <name>
 | `bd update <id> --status=...` | 更新状态 |
 | `bd update <id> --notes/--design` | 持久化发现 |
 | `bd close <id>` | 关闭 Bead |
+| `gt close <id> [<id>...]` | 批量关闭 Bead（gt 命令） |
+| `gt show/cat <id>` | 查看 Bead（gt 命令） |
 | `bd ready` | 无阻塞可用工作 |
 | `bd blocked` | 被阻塞的 Bead |
 | `bd dep add/remove` | 依赖管理 |
@@ -1015,9 +1298,32 @@ gt plugin install <name>
 
 | 命令 | 用途 |
 |------|------|
-| `gt start / gt shutdown` | 启动/关闭 |
+| `gt install <dir>` | 首次安装工作空间 |
+| `gt init` | 初始化当前目录为 Rig |
+| `gt start / gt up` | 启动服务 |
+| `gt shutdown / gt down` | 关闭服务 |
 | `gt estop / gt thaw` | 紧急停车/恢复 |
 | `gt rig list/add/start/stop` | Rig 管理 |
 | `gt config list/set` | 配置管理 |
+| `gt directive list/show` | 角色指令管理 |
+| `gt hooks list/add` | Hook 脚本管理 |
+| `gt account list/switch` | 账户管理 |
+| `gt issue set/clear` | 状态栏 issue 显示 |
 | `gt version / gt upgrade` | 版本与升级 |
 | `gt completion <shell>` | Shell 补全 |
+| `gt info` | Gas Town 信息 |
+
+### 特殊与基础设施
+
+| 命令 | 用途 |
+|------|------|
+| `gt daemon start/stop/status` | 后台守护进程 |
+| `gt town status/config` | Town 级操作 |
+| `gt wl status/sync` | Wasteland 联邦 |
+| `gt krc set/get` | 临时数据 TTL 管理 |
+| `gt warrant issue/list/execute` | 强制终止卡住 agent |
+| `gt quota status/rotate` | 账户配额轮换 |
+| `gt reaper reap/status` | Wisp/issue 清理 |
+| `gt patrol` | 巡逻摘要 |
+| `gt namepool list/available` | 名称池管理 |
+| `gt theme` | tmux 主题管理 |
