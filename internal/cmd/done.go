@@ -644,6 +644,17 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 				}
 			}
 
+			// Trigger post-direct-merge notification chain (gt-dn8).
+			// When pushing directly to main, the refinery never runs its
+			// HandleMRInfoSuccess, so mayor, deacon, and convoy subscribers
+			// are never notified. This call mirrors the refinery's post-merge
+			// steps: MERGED nudge to mayor, CONVOY_NEEDS_FEEDING to deacon,
+			// convoy completion check/close/notify, and swarm landing.
+			// Only runs on successful push + issue close (not on pushFailed path).
+			if !pushFailed && directPushErr == nil {
+				postDirectMergeNotify(townRoot, rigName, issueID, convoyInfo)
+			}
+
 			goto notifyWitness
 		}
 
@@ -914,6 +925,10 @@ func runDone(cmd *cobra.Command, args []string) (retErr error) {
 						style.PrintWarning("could not close issue %s after 3 attempts: %v", issueID, closeErr)
 					}
 				}
+
+				// Trigger post-direct-merge notification chain (gt-dn8).
+				// Same as the primary direct-merge path above.
+				postDirectMergeNotify(townRoot, rigName, issueID, convoyInfo)
 
 				goto notifyWitness
 			}
