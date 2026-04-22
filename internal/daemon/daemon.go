@@ -2070,8 +2070,12 @@ func (d *Daemon) isRigOperational(rigName string) (bool, string) {
 				return false, "rig is parked (global)"
 			}
 		}
+	} else if errors.Is(err, beads.ErrNotFound) {
+		// Rig bead doesn't exist — the rig was never set up with an identity bead.
+		// This means the rig has no parked/docked status, so treat it as operational.
+		// Matches IsRigParkedOrDocked() behavior in rig_helpers.go (gt-ikl).
+		d.logger.Printf("Info: rig bead %s not found (no parked/docked status, assuming operational)", rigBeadID)
 	} else {
-		// Log when rig bead lookup fails - this helps debug transient Dolt issues
 		// FAIL-SAFE: When we can't verify docked status (Dolt down, network issue, etc.),
 		// assume the rig is NOT operational. This prevents wasting API credits starting
 		// witnesses that might be docked. Better to delay work than burn credits unnecessarily.
