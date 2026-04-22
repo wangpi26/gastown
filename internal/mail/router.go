@@ -841,6 +841,7 @@ func (r *Router) shouldBeWisp(msg *Message) bool {
 		"merged",
 		"merge_ready",
 		"merge_failed",
+		"plugin:",
 	}
 	for _, prefix := range wispPrefixes {
 		if strings.HasPrefix(subjectLower, prefix) {

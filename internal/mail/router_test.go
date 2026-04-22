@@ -318,6 +318,16 @@ func TestShouldBeWisp(t *testing.T) {
 			msg:  &Message{Subject: "HANDOFF: context notes"},
 			want: false,
 		},
+		{
+			name: "Plugin dispatch subject (deacon→dog)",
+			msg:  &Message{Subject: "Plugin: stuck-agent-dog"},
+			want: true,
+		},
+		{
+			name: "plugin: lowercase prefix",
+			msg:  &Message{Subject: "plugin: some-plugin"},
+			want: true,
+		},
 	}
 
 	for _, tt := range tests {
